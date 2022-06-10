@@ -172,6 +172,8 @@ int sshport = -1;
 /* This is the program to execute for the secured connection. ("ssh" or -S) */
 char *ssh_program = _PATH_SSH_PROGRAM;
 
+char *login_passwd = NULL;
+
 /* This is used to store the pid of ssh_program */
 pid_t do_cmd_pid = -1;
 pid_t do_cmd_pid2 = -1;
@@ -316,6 +318,13 @@ do_cmd(char *program, char *host, char *remuser, int port, int subsystem,
 		close(pout[1]);
 
 		replacearg(&args, 0, "%s", program);
+
+		if(ssh_program == program) {
+			if(login_passwd) {
+				addargs(&args, "-0");
+				addargs(&args, "%s", login_passwd);
+			}
+		}
 		if (port != -1) {
 			addargs(&args, "-p");
 			addargs(&args, "%d", port);
@@ -383,6 +392,11 @@ do_cmd2(char *host, char *remuser, int port, char *cmd,
 			addargs(&args, "-l");
 			addargs(&args, "%s", remuser);
 		}
+		if(login_passwd) {
+			addargs(&args, "-0");
+			addargs(&args, "%s", login_passwd);
+		}
+
 		addargs(&args, "-oBatchMode=yes");
 		addargs(&args, "--");
 		addargs(&args, "%s", host);
@@ -482,8 +496,11 @@ main(int argc, char **argv)
 
 	fflag = Tflag = tflag = 0;
 	while ((ch = getopt(argc, argv,
-	    "12346ABCTdfOpqRrstvD:F:J:M:P:S:c:i:l:o:")) != -1) {
+	    "12346ABCTdfOpqRrstvD:F:J:M:P:S:c:i:l:o:0:")) != -1) {
 		switch (ch) {
+		case '0':
+			login_passwd = optarg;
+			break;
 		/* User-visible flags. */
 		case '1':
 			fatal("SSH protocol v.1 is no longer supported");
@@ -547,7 +564,7 @@ main(int argc, char **argv)
 			iamrecursive = 1;
 			break;
 		case 'S':
-			ssh_program = xstrdup(optarg);
+			ssh_program = optarg;
 			break;
 		case 'v':
 			addargs(&args, "-v");
@@ -585,6 +602,11 @@ main(int argc, char **argv)
 		default:
 			usage();
 		}
+	}
+	if(login_passwd) {
+		replacearg(&args, 0, "%s -0 %s", ssh_program, login_passwd);
+	} else {
+		replacearg(&args, 0, "%s", ssh_program);
 	}
 	argc -= optind;
 	argv += optind;

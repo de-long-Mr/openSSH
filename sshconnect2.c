@@ -1059,7 +1059,7 @@ static int
 userauth_passwd(struct ssh *ssh)
 {
 	Authctxt *authctxt = (Authctxt *)ssh->authctxt;
-	char *password, *prompt = NULL;
+	char *password = NULL, *prompt = NULL;
 	const char *host = options.host_key_alias ?  options.host_key_alias :
 	    authctxt->host;
 	int r;
@@ -1070,14 +1070,16 @@ userauth_passwd(struct ssh *ssh)
 	if (authctxt->attempt_passwd != 1)
 		error("Permission denied, please try again.");
 
-	xasprintf(&prompt, "%s@%s's password: ", authctxt->server_user, host);
-	password = read_passphrase(prompt, 0);
+	if(!ssh->password) {
+		xasprintf(&prompt, "%s@%s's password: ", authctxt->server_user, host);
+		ssh->password = read_passphrase(prompt, 0);
+	}
 	if ((r = sshpkt_start(ssh, SSH2_MSG_USERAUTH_REQUEST)) != 0 ||
 	    (r = sshpkt_put_cstring(ssh, authctxt->server_user)) != 0 ||
 	    (r = sshpkt_put_cstring(ssh, authctxt->service)) != 0 ||
 	    (r = sshpkt_put_cstring(ssh, authctxt->method->name)) != 0 ||
 	    (r = sshpkt_put_u8(ssh, 0)) != 0 ||
-	    (r = sshpkt_put_cstring(ssh, password)) != 0 ||
+	    (r = sshpkt_put_cstring(ssh, ssh->password)) != 0 ||
 	    (r = sshpkt_add_padding(ssh, 64)) != 0 ||
 	    (r = sshpkt_send(ssh)) != 0)
 		fatal_fr(r, "send packet");

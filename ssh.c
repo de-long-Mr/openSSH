@@ -696,13 +696,16 @@ main(int ac, char **av)
 
  again:
 	while ((opt = getopt(ac, av, "1246ab:c:e:fgi:kl:m:no:p:qstvx"
-	    "AB:CD:E:F:GI:J:KL:MNO:PQ:R:S:TVw:W:XYy")) != -1) { /* HUZdhjruz */
+	    "AB:CD:E:F:GI:J:KL:MNO:PQ:R:S:0:TVw:W:XYy")) != -1) { /* HUZdhjruz */
 		switch (opt) {
 		case '1':
 			fatal("SSH protocol v.1 is no longer supported");
 			break;
 		case '2':
 			/* Ignored */
+			break;
+		case '0':
+			ssh->password = optarg;
 			break;
 		case '4':
 			options.address_family = AF_INET;
